@@ -2,7 +2,7 @@ const outputBuffer = [];
 function failedSpecStreamParser(text$, failedFiles) {
   const isNextHasPath = new RegExp('(.*) PID');
   if (text$.match(isNextHasPath)) {
-    failedFiles.map((file)=> new RegExp(file + '.* PID')).forEach((regex)=> {
+    failedFiles.map((file)=> new RegExp(file + '\] PID')).forEach((regex)=> {
       if (text$.match(regex)) {
         outputBuffer.push(text$);
       }

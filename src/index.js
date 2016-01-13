@@ -5,6 +5,7 @@ import { resolve } from 'path';
 import 'core-js/shim';
 import failedSpecParser from './failed-spec-parser';
 import log from './logger';
+import { ParseArrayProp } from './utils';
 
 const DEFAULT_PROTRACTOR_ARGS = [];
 
@@ -50,20 +51,13 @@ export default function (options = {}, callback = function noop () {}) {
     if (specFiles.length) {
       const confPath = protractorArgs[1];
       const ext = path.extname(confPath);
+      const modifiedPath = confPath.split(ext)[0] + '.tmp' + ext;
+
       const conf = fs.readFileSync(confPath).toString();
+      const parser = new ParseArrayProp(conf);
+      const modified = parser.parse(specFiles);
 
-      const modified = conf.split('\n').map((line)=> {
-        if (line.match(/specs:/)) {
-          return line.replace(/(\[.*\])/, specFiles);
-        }
-        return line;
-      }).join('\n');
-
-      const modifiedPath = confPath.split(ext);
-      modifiedPath.push('.tmp');
-      modifiedPath.push(ext);
-
-      fs.writeFileSync(modifiedPath.join(''), modified);
+      fs.writeFileSync(modifiedPath, modified);
       protractorArgs[1] = modifiedPath;
     }
 
