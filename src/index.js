@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { spawn } from 'child_process';
 import { resolve } from 'path';
 import 'core-js/shim';
@@ -42,12 +44,27 @@ export default function (options = {}, callback = function noop () {}) {
     // '.../node_modules/protractor/bin/protractor'
     const protractorBinPath = resolve(protractorMainPath, '../../bin/protractor');
 
-    let protractorArgs = [protractorBinPath].concat(parsedOptions.protractorArgs);
+    const protractorArgs = [protractorBinPath].concat(parsedOptions.protractorArgs);
     let output = '';
 
     if (specFiles.length) {
-      protractorArgs = protractorArgs.filter((arg)=> !/^--suite=/.test(arg));
-      protractorArgs.push('--specs', specFiles.join(','));
+      const confPath = protractorArgs[1];
+      const ext = path.extname(confPath);
+      const conf = fs.readFileSync(confPath).toString();
+
+      const modified = conf.split('\n').map((line)=> {
+        if (line.match(/specs:/)) {
+          return line.replace(/(\[.*\])/, specFiles);
+        }
+        return line;
+      }).join('\n');
+
+      const modifiedPath = confPath.split(ext);
+      modifiedPath.push('.tmp');
+      modifiedPath.push(ext);
+
+      fs.writeFileSync(modifiedPath.join(''), modified);
+      protractorArgs[1] = modifiedPath;
     }
 
     const protractor = spawn(

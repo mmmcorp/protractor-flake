@@ -1,13 +1,20 @@
 const outputBuffer = [];
-function failedSpecStreamParser(text$) {
-  if (text$.match(/Error/)) {
-    outputBuffer.push(text$);
+function failedSpecStreamParser(text$, failedFiles) {
+  const isNextHasPath = new RegExp('(.*) PID');
+  if (text$.match(isNextHasPath)) {
+    failedFiles.map((file)=> new RegExp(file + '.* PID')).forEach((regex)=> {
+      if (text$.match(regex)) {
+        outputBuffer.push(text$);
+      }
+    });
     return null;
   }
+
   if (outputBuffer.length > 0) {
     outputBuffer.pop();
     return text$;
   }
+
   return null;
 }
 
@@ -23,12 +30,20 @@ export default function (output = '') {
     }
   } else {
     const lineByLine = output.toString().split('\n');
+    const failedFiles = lineByLine.filter((line)=> {
+      const failed = /(\[launcher\]).*#[0-9]-[0-9]* failed/;
+      return line.match(failed);
+    })
+    .map((line)=> {
+      const testId = /.*(#[0-9]-[0-9]*)/;
+      return testId.exec(line)[1];
+    });
+
     lineByLine.forEach((line)=> {
-      const parsed$ = failedSpecStreamParser(line);
+      const parsed$ = failedSpecStreamParser(line, failedFiles);
       if (parsed$) {
-        const FAILED_LINES = /at (?:\[object Object\]|Object)\.<anonymous> \((([A-Z]:\\)?.*?):.*\)/g;
-        const FAILED_LINES_PLANE = /at (.*)(:.*:.*)/g;
-        match = FAILED_LINES.exec(parsed$) || FAILED_LINES_PLANE.exec(parsed$)
+        const FAILED_LINES = /.*#[0-9]-[0-9]*.* Specs: (.*)/;
+        match = FAILED_LINES.exec(parsed$);
         if (match) {
           // windows output includes stack traces from
           // webdriver so we filter those out here
