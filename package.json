@@ -8,12 +8,12 @@
   },
   "scripts": {
     "serve": "bin/www",
-    "lint": "eslint .",
+    "lint": "$(npm bin)/eslint .",
     "test": "npm run lint && npm run test:unit && npm run test:integration",
     "test:unit": "mocha",
     "test:integration": "webdriver-manager update && npm run build && mocha test/helper.js test/integration/bin.js --slow 30000 --timeout 30000 --reporter tap",
     "test:dev": "mocha --watch",
-    "build": "babel -d dist src",
+    "build": "$(npm bin)/babel -d dist src",
     "prepublish": "npm run build",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
