@@ -22,13 +22,12 @@ export default function (output = '') {
       failedSpecs.add(match[1]);
     }
   } else {
-    const FAILED_LINES = /at (?:\[object Object\]|Object)\.<anonymous> \((([A-Z]:\\)?.*?):.*\)/g;
-    const FAILED_LINES_PLANE = /at (.*)(:.*:.*)/g;
-
     const lineByLine = output.toString().split('\n');
     lineByLine.forEach((line)=> {
       const parsed$ = failedSpecStreamParser(line);
       if (parsed$) {
+        const FAILED_LINES = /at (?:\[object Object\]|Object)\.<anonymous> \((([A-Z]:\\)?.*?):.*\)/g;
+        const FAILED_LINES_PLANE = /at (.*)(:.*:.*)/g;
         match = FAILED_LINES.exec(parsed$) || FAILED_LINES_PLANE.exec(parsed$)
         if (match) {
           // windows output includes stack traces from
