@@ -26,10 +26,6 @@ export default function (options = {}, callback = function noop () {}) {
       if (++testAttempt <= parsedOptions.maxAttempts) {
         const failedSpecs = failedSpecParser(output);
 
-        log('info', '\nOUTPUT: --------\n');
-        log('info', output);
-        log('info', '\n-------- :END\n');
-
         log('info', `Re-running tests: test attempt ${testAttempt}\n`);
         log('info', 'Re-running the following test files:\n');
         log('info', failedSpecs.join('\n') + '\n');
