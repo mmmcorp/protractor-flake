@@ -1,11 +1,8 @@
-import fs from 'fs';
-import path from 'path';
 import { spawn } from 'child_process';
 import { resolve } from 'path';
 import 'core-js/shim';
 import failedSpecParser from './failed-spec-parser';
 import log from './logger';
-import { ParseArrayProp } from './utils';
 
 const DEFAULT_PROTRACTOR_ARGS = [];
 
@@ -22,21 +19,28 @@ export default function (options = {}, callback = function noop () {}) {
   // todo: remove this in the next major version
   parsedOptions.protractorArgs = parsedOptions.protractorArgs.concat(parsedOptions['--']);
 
-  function handleTestEnd(status, output) {
+  function handleTestEnd(status, output, prevSpecs) {
     if (status === 0) {
-      callback(status);
-    } else {
-      if (++testAttempt <= parsedOptions.maxAttempts) {
-        const failedSpecs = failedSpecParser(output);
-
-        log('info', `Re-running tests: test attempt ${testAttempt}\n`);
-        log('info', 'Re-running the following test files:\n');
-        log('info', failedSpecs.join('\n') + '\n');
-        return startProtractor(failedSpecs);
-      }
-
-      callback(status);
+      return callback(status);
     }
+
+    testAttempt++;
+    if (testAttempt > parsedOptions.maxAttempts) {
+      return callback(status);
+    }
+
+    log('info', `Re-running tests: test attempt ${testAttempt}\n`);
+    log('info', 'Re-running the following test files:\n');
+
+    if (prevSpecs.length === 1) {
+      log('info', prevSpecs.join('\n') + '\n');
+      return startProtractor(prevSpecs);
+    }
+
+    const failedSpecs = failedSpecParser(output);
+    log('info', failedSpecs.join('\n') + '\n');
+
+    startProtractor(failedSpecs);
   }
 
   function startProtractor(specFiles = []) {
@@ -45,20 +49,12 @@ export default function (options = {}, callback = function noop () {}) {
     // '.../node_modules/protractor/bin/protractor'
     const protractorBinPath = resolve(protractorMainPath, '../../bin/protractor');
 
-    const protractorArgs = [protractorBinPath].concat(parsedOptions.protractorArgs);
+    let protractorArgs = [protractorBinPath].concat(parsedOptions.protractorArgs);
     let output = '';
 
     if (specFiles.length) {
-      const confPath = protractorArgs[1];
-      const ext = path.extname(confPath);
-      const modifiedPath = confPath.split(ext)[0] + '.tmp' + ext;
-
-      const conf = fs.readFileSync(confPath).toString();
-      const parser = new ParseArrayProp(conf);
-      const modified = parser.parse(specFiles);
-
-      fs.writeFileSync(modifiedPath, modified);
-      protractorArgs[1] = modifiedPath;
+      protractorArgs = protractorArgs.filter((arg)=> !/^--suite=/.test(arg));
+      protractorArgs.push('--specs', specFiles.join(','));
     }
 
     const protractor = spawn(
@@ -74,7 +70,7 @@ export default function (options = {}, callback = function noop () {}) {
     });
 
     protractor.on('exit', function (status) {
-      handleTestEnd(status, output);
+      handleTestEnd(status, output, specFiles);
     });
   }
 
