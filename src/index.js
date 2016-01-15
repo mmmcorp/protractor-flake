@@ -1,7 +1,8 @@
+import path from 'path';
 import { spawn } from 'child_process';
 import { resolve } from 'path';
 import 'core-js/shim';
-import failedSpecParser from './failed-spec-parser';
+import defineParser from './define-parser';
 import log from './logger';
 
 const DEFAULT_PROTRACTOR_ARGS = [];
@@ -13,20 +14,30 @@ const DEFAULT_OPTIONS = {
   protractorArgs: DEFAULT_PROTRACTOR_ARGS,
 };
 
-export default function (options = {}, callback = function noop () {}) {
+export default function (options = {}, done = function noop () {}) {
   const parsedOptions = Object.assign(DEFAULT_OPTIONS, options);
+
+  // get protractor's configuration to decide appropriate stdout-parser.
+  let protractorConfig;
+  try {
+    protractorConfig = require(parsedOptions.protractorArgs[0]);
+  } catch (err) {
+    protractorConfig = path.resolve(process.cwd(), './protractor.conf.js');
+  }
+  const failedSpecParser = options.customParser || defineParser(protractorConfig.config);
   let testAttempt = 1;
+
   // todo: remove this in the next major version
   parsedOptions.protractorArgs = parsedOptions.protractorArgs.concat(parsedOptions['--']);
 
   function handleTestEnd(status, output, prevSpecs) {
     if (status === 0) {
-      return callback(status);
+      return done(status);
     }
 
     testAttempt++;
     if (testAttempt > parsedOptions.maxAttempts) {
-      return callback(status);
+      return done(status);
     }
 
     log('info', `Re-running tests: test attempt ${testAttempt}\n`);

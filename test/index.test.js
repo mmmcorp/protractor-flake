@@ -35,7 +35,6 @@ describe('Protractor Flake', () => {
 
   it('uses node to run protractor', () => {
     protractorFlake();
-
     expect(spawnStub).to.have.been.calledWith('node', [pathToProtractor()]);
   });
 

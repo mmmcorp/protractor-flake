@@ -1,4 +1,5 @@
 import readFixture from './support/read-fixture';
+import defineParser from '../src/define-parser';
 import failedSpecParser from '../src/failed-spec-parser';
 
 describe('failed spec parser', () => {
@@ -21,8 +22,8 @@ describe('failed spec parser', () => {
 
   it('properly identifies failed cucumberjs feature files', () => {
     let output = readFixture('failed-cucumberjs-output.txt');
-
-    expect(failedSpecParser(output)).to.eql([
+    const cucumberParser = defineParser({ framework: 'cucumber' });
+    expect(cucumberParser(output)).to.eql([
       '/Users/jrust/code/features/automated/fail.feature'
     ]);
   });
