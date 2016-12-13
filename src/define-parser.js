@@ -13,15 +13,15 @@ function shardParser(output) {
   const lineByLine = output.toString().split('\n');
 
   const failedFileIDs = lineByLine.filter((line)=> {
-    const failed = /(\[launcher\]).*#[0-9]-[0-9]* failed/;
+    const failed = /(\I\/launcher).*#[0-9]*-[0-9]* failed/;
     return line.match(failed);
   })
   .map((line)=> {
-    const testId = /.*(#[0-9]-[0-9]*)/;
+    const testId = /.*(#[0-9]*-[0-9]*)/;
     return testId.exec(line)[1];
   });
 
-  const filePath = '.*#[0-9]-[0-9]*.* Specs: (.*)';
+  const filePath = '.*#[0-9]*-[0-9]*.* Specs: (.*)';
   const failedSpecs = lineByLine.filter((line)=> {
     return line.match(new RegExp(filePath));
   }).filter((containPath)=> {
